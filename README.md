@@ -1,13 +1,15 @@
-# One bottle
+# One lot, from vine to glass
 
 A small wine-production example for [Sip Studies](https://github.com/Sip-Coder): the same cellar, drawn two ways.
 
 - A **TLA+ model** of one lot of red wine, checked with TLC and drawn as a Mermaid statechart in the style of Lauren Tan’s [pstack `/statechart`](https://github.com/cursor/plugins/tree/main/pstack/skills/statechart).
-- A **field-notes page** you can click: harvest, crush, ferment, the oak-or-steel fork, bottle, taste. Illegal clicks are refused. The pictures follow April Zhu’s isometric demos (the “One cup” coffee branch, and [Colorfigures](https://april-zhu.com/colorfigures)).
+- A **drawn wine journal** you can click: harvest, crush, ferment, the oak-or-steel fork, bottle, taste. Original flat illustrations use Kevin Ngo's dry-media drawing kit, with pencil and pastel on textured paper. Illegal clicks are refused.
 
 This is a test example, not a cellar-management product.
 
 ## Open the demo
+
+**Live:** [sip-coder.github.io/Poteto-Stack/demo/](https://sip-coder.github.io/Poteto-Stack/demo/)
 
 The page is a module, so open it from a local server (a `file://` URL will not load the state machine).
 
@@ -17,11 +19,30 @@ python3 -m http.server 8080
 
 Then visit [http://localhost:8080/demo/](http://localhost:8080/demo/).
 
-Click a machine, a chart node, or a button along the bottom. The red border is the step you are on. A dashed red path is the one this lot actually took. Oak and steel are a fork: once you rack the wine, the other vessel dims and will not take the lot.
+Follow the lot through four paper chapters: vineyard, fermentation, cellar, and table. Click the illustrated equipment or its labelled action. The golden thread follows the lot's completed steps. Oak and steel are a fork: once you rack the wine, the other vessel dims and will not take the lot. A refused action leaves the wine where it is and draws a red refusal note.
 
-`?play=oak` and `?play=steel` walk the happy path on their own.
+Each labelled action always performs exactly the action it names. Bottling again cannot silently pour a glass. State changes happen immediately; illustration motion never delays or substitutes a wine action. Reset starts a new lot and cancels an autoplay tour. The animation respects `prefers-reduced-motion`.
 
-If GitHub Pages is enabled for this repo from the root, the same page is at `/demo/`.
+`?play=oak` and `?play=steel` walk the happy path on their own. With reduced motion enabled, a tour starts only from its explicit button.
+
+GitHub Pages publishes `/demo/` from the root of `main`. A normal push to `main` updates the phone preview after Pages finishes building.
+
+## How this was drawn
+
+The model and drawing remain separate. `spec/Wine.tla`, its configuration, the shared reader-facing view, and the JavaScript machine supply the wine rules. The existing TLC report and Mermaid chart are preserved. The responsive journal has an authored layout; this redraw does not claim a new pele layout or TLC run.
+
+[`art/render-wine.cjs`](art/render-wine.cjs) draws original vineyard and winery equipment from deterministic coordinates. Kevin Ngo's vendored kit simulates hot-press paper tooth, coloured-pencil deposits, fine pen strokes, and Hershey lettering at eight pixels per millimetre. Masks cut the drawings out as transparent 720 × 600 PNGs, so they sit naturally on the journal's paper. A shared 512 × 512 paper-grain texture supplies the background tooth.
+
+Rebuild the nine illustrations, five state variants, and paper grain with Node 24:
+
+```sh
+npm ci
+npm run art
+```
+
+To redraw one illustration, use `node art/render-wine.cjs oak` (or `vine`, `basket`, `crusher`, `vat`, `press`, `steel`, `bottles`, `glass`). State variants include a harvested vine, sealed vat, one or no full bottles, and an empty glass. Outputs are committed under [`demo/assets/`](demo/assets/), so Pages needs no build-time image renderer. Kevin Sans regular and bold are served locally as WOFF2 files.
+
+The reused kit, drawing helpers, and font sources are in [`art/vendor/statechart-art/`](art/vendor/statechart-art/), taken from Kevin's [`292f54c`](https://github.com/kevintngo/statechart-art/commit/292f54c51bf0b728c49f97670f813f77d2422693). Its [MIT license](art/vendor/statechart-art/LICENSE) is preserved. The coloured paper, gold active threads, red refusal threads, and illustration motion live in the browser layer; they never change the model's guards.
 
 ## What a click does
 
@@ -74,6 +95,10 @@ npm test
 
 The test also checks that `spec/Wine.tla` and `spec/Wine.cfg` name the same actions, invariants, and constants.
 
+`test/demo.test.mjs` runs the page in Happy DOM and checks both UI paths, exact bottle/pour button semantics, refused moves, rapid repeat clicks, reset, autoplay cancellation, and reduced-motion behavior. These interaction checks supplement visual checks on the rendered page; they do not simulate a phone's graphics engine.
+
+The `Wine checks` GitHub Actions workflow runs `npm ci` and `npm test` on pushes to `main` and pull requests targeting it, using Node 24.
+
 ## Run TLC again
 
 [TLA+ tools](https://github.com/tlaplus/tlaplus/releases) `tla2tools.jar` from 1.7 or later, and Java 11 or later:
@@ -97,10 +122,11 @@ This repo was checked with TLC 2.19 (`tla2tools.jar` 1.7.4) and the statechart s
 
 ## What this leaves out
 
-One lot of red wine only. No white-wine press-before-ferment, no malolactic fermentation, no topping, no blend, no second lot in parallel. The crusher and the press are the same machine used at two different times, which matches a basket press, not a separate destemmer and a separate press. Aging does not tick: choosing oak or steel is the whole cellar step.
+One lot of red wine only. No white-wine press-before-ferment, no malolactic fermentation, no topping, no blend, no second lot in parallel. Separate crush and press illustrations show two actions in the same model; no new equipment states have been added. Aging does not tick: choosing oak or steel is the whole cellar step.
 
 ## Credits
 
 - Statechart method, TLC, and the reader-facing view: Lauren Tan ([@poteto](https://github.com/poteto)), [pstack `/statechart`](https://github.com/cursor/plugins/tree/main/pstack/skills/statechart).
-- Field-notes isometric figures, the dashed flowchart, and the clickable machines: April Zhu ([@Aprilzz423](https://x.com/Aprilzz423)), [Colorfigures](https://april-zhu.com/colorfigures) and the “One cup” / metro demos. The page does not ship the Colorfigures engine. It is an original SVG poster in that spirit. Colorfigures is MIT; see [april-zhu.com/colorfigures](https://april-zhu.com/colorfigures).
-- The boba-shop diagrams that showed how a `/statechart` can read as a picture: Kevin Ngo.
+- The original field-notes flow and clickable equipment: April Zhu ([@Aprilzz423](https://x.com/Aprilzz423)), [Colorfigures](https://april-zhu.com/colorfigures) and the "One cup" / metro demos. The page does not ship the Colorfigures engine.
+- Dry-media drawing method, kit, and Kevin Sans lettering: Kevin T. Ngo, [statechart-art](https://github.com/kevintngo/statechart-art), especially [One becomes two](https://kevintngo.github.io/statechart-art/one-becomes-two/). Reused code and fonts retain Kevin's MIT license. Wine scenes are original drawings made for this project.
+- Wine example and interactive journal: [Sip Studies / Sip-Coder](https://github.com/Sip-Coder).

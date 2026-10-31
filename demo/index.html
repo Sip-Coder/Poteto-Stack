@@ -1,1124 +1,382 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>One bottle · field notes</title>
-<style>
-  :root {
-    --paper: #f3eee4;
-    --ink: #3c3832;
-    --muted: #8d8276;
-    --faint: #c9bba8;
-    --line: #cfc3b2;
-    --red: #c4473c;
-    --red-soft: #e7b2aa;
-    --chip: #fbf8f1;
-    --serif: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, "Times New Roman", serif;
-    --mono: "Courier New", Courier, ui-monospace, monospace;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--paper); color: var(--ink); }
-  body {
-    font-family: var(--serif);
-    min-height: 100vh;
-    background-image: radial-gradient(rgba(90, 70, 40, 0.035) 0.7px, transparent 0.7px);
-    background-size: 4px 4px;
-  }
-  button, input { font: inherit; color: inherit; }
-  .sheet {
-    position: relative;
-    width: min(1040px, 100%);
-    margin: 0 auto;
-    padding: 28px 18px 36px;
-  }
-  .plus {
-    position: absolute;
-    z-index: 0;
-    color: #ddd4c6;
-    font-family: var(--mono);
-    font-size: 14px;
-    line-height: 1;
-    pointer-events: none;
-    user-select: none;
-  }
-  .top, .flow, .actions, footer, .formal { position: relative; z-index: 1; }
-  .top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 24px;
-    padding: 8px 12px 0;
-  }
-  .kicker {
-    margin: 0;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.14em;
-    text-transform: lowercase;
-    color: var(--muted);
-  }
-  h1 {
-    margin: 8px 0 0;
-    font-family: var(--serif);
-    font-weight: 500;
-    font-size: 52px;
-    letter-spacing: -0.03em;
-    line-height: 0.95;
-  }
-  .sub {
-    margin: 8px 0 0;
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 18px;
-    color: #6f655c;
-  }
-  .now {
-    margin: 10px 0 0;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--red);
-    min-height: 1.2em;
-  }
-  .rules {
-    width: min(340px, 100%);
-    flex: none;
-    background: var(--chip);
-    border: 1px solid #e6d8c4;
-    padding: 12px 14px 14px;
-    box-shadow: 3px 3px 0 rgba(180, 150, 110, 0.12);
-  }
-  .rules h2 {
-    margin: 0 0 8px;
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-  }
-  .rules p {
-    margin: 0 0 8px;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--muted);
-  }
-  .rules ul { margin: 0; padding: 0; }
-  .rules li {
-    list-style: none;
-    margin: 7px 0;
-    font-style: italic;
-    font-size: 13.5px;
-    color: #5e564e;
-    padding-left: 12px;
-    border-left: 2px solid transparent;
-  }
-  .rules li.hit {
-    color: var(--red);
-    border-left-color: var(--red);
-  }
-  .notice {
-    position: fixed;
-    z-index: 8;
-    left: 50%;
-    bottom: 64px;
-    transform: translateX(-50%) translateY(6px);
-    margin: 0;
-    max-width: min(520px, calc(100% - 32px));
-    padding: 8px 12px;
-    text-align: center;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--red);
-    background: #fffaf6;
-    border: 1px solid #e7b2aa;
-    box-shadow: 0 8px 18px rgba(80, 40, 30, 0.08);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-  }
-  .notice.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  .flow { margin-top: 6px; display: flex; flex-direction: column; }
-  .row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px minmax(0, 1fr);
-    align-items: center;
-    gap: 6px;
-    min-height: 92px;
-  }
-  .side { display: flex; align-items: center; min-height: 72px; }
-  .side.left { justify-content: flex-end; }
-  .side.right { justify-content: flex-start; }
-  .mid { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 1; }
-  .node {
-    position: relative;
-    appearance: none;
-    background: var(--chip);
-    border: 1px dashed var(--line);
-    border-radius: 2px;
-    padding: 8px 14px 9px;
-    min-width: 168px;
-    text-align: center;
-    cursor: pointer;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  }
-  .node:focus-visible, .vig:focus-visible, .actions button:focus-visible {
-    outline: 2px solid var(--red);
-    outline-offset: 2px;
-  }
-  .node .dot {
-    position: absolute;
-    left: 50%;
-    top: -5px;
-    width: 8px;
-    height: 8px;
-    margin-left: -4px;
-    border-radius: 50%;
-    background: #e4d3c0;
-    box-shadow: 0 0 0 2px var(--paper);
-  }
-  .node .nt {
-    display: block;
-    font-family: var(--mono);
-    font-size: 13px;
-    letter-spacing: -0.02em;
-  }
-  .node .ns {
-    display: block;
-    min-height: 0;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: #b3a696;
-  }
-  .node .ns:empty { display: none; }
-  .node.active { border-style: solid; border-color: var(--red); }
-  .node.active .dot { background: var(--red); }
-  .node.active .nt { color: #9d342c; }
-  .node.done { border-color: #b7ad9f; }
-  .node.done .dot { background: #8eaa86; }
-  .node.open { border-color: #e0a79e; }
-  .node.dim { opacity: 0.38; }
-  .node[data-dot="sand"] .dot { background: #e0c48a; }
-  .node[data-dot="rose"] .dot { background: #e3a0a0; }
-  .node[data-dot="leaf"] .dot { background: #9cba8c; }
-  .node[data-dot="wine"] .dot { background: #c46b7a; }
-  .node[data-dot="oak"] .dot { background: #c4925c; }
-  .node[data-dot="steel"] .dot { background: #8fb4c0; }
-  .node[data-dot="gold"] .dot { background: #d1b15e; }
-  .node.active .dot { background: var(--red); }
-  .wlab {
-    margin: 7px 0;
-    padding: 0 6px;
-    background: var(--paper);
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 12px;
-    color: #b3a89c;
-    text-align: center;
-  }
-  .wlab.soon, .wlab.hot { color: var(--red); }
-  .wlab.dim { opacity: 0.35; }
-  .fork-conds {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-  .fork-conds span {
-    flex: 1;
-    text-align: center;
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 12px;
-    color: #b3a89c;
-    background: var(--paper);
-  }
-  .fork-conds span.soon, .fork-conds span.hot { color: var(--red); }
-  .fork-conds span.dim { opacity: 0.35; }
-  .pair { display: flex; gap: 10px; justify-content: center; }
-  .pair .node { min-width: 112px; padding-inline: 8px; }
-  .row.spread .pair {
-    width: 360px;
-    max-width: calc(100vw - 48px);
-    justify-content: space-between;
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  .row.spread .side.left .vig { margin-right: 18px; }
-  .row.spread .side.right .vig { margin-left: 18px; }
-  .vig {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    border-radius: 8px;
-  }
-  .side.left .vig { flex-direction: row; }
-  .art { display: block; overflow: visible; }
-  .callout {
-    position: relative;
-    width: 104px;
-    padding: 7px 8px 8px;
-    flex: none;
-  }
-  .callout b {
-    display: block;
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 500;
-    color: #6e655c;
-    letter-spacing: -0.03em;
-  }
-  .callout i {
-    display: block;
-    margin-top: 2px;
-    font-style: normal;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: #c3b6a8;
-  }
-  .callout .brc {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border: 0 solid var(--red-soft);
-  }
-  .callout .tl { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
-  .callout .tr { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
-  .callout .bl { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
-  .callout .br { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
-  .callout.on b { color: var(--red); }
-  .callout.on i { color: #d08982; }
-  .callout.on .brc { border-color: var(--red); }
-  .side.left .callout::after,
-  .side.right .callout::after {
-    content: "";
-    position: absolute;
-    top: 16px;
-    width: 16px;
-    border-top: 1px solid var(--red-soft);
-  }
-  .side.left .callout::before,
-  .side.right .callout::before {
-    content: "";
-    position: absolute;
-    top: 16px;
-    height: 14px;
-    border-left: 1px solid var(--red-soft);
-  }
-  .side.left .callout::after { right: -16px; }
-  .side.left .callout::before { right: -16px; }
-  .side.right .callout::after { left: -16px; }
-  .side.right .callout::before { left: -16px; }
-  .callout.on::before, .callout.on::after { border-color: var(--red); }
-  .wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 0; }
-  .wire { fill: none; stroke: var(--faint); stroke-width: 1.35; stroke-dasharray: 3 4; stroke-linecap: butt; }
-  .wire.hot { stroke: var(--red); stroke-width: 1.6; stroke-dasharray: 5 4; }
-  .wire.dim { stroke: #e6dfd4; }
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-    margin: 22px 12px 8px;
-  }
-  .actions button {
-    appearance: none;
-    background: var(--chip);
-    border: 1px dashed var(--line);
-    border-radius: 2px;
-    padding: 8px 10px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: #6a6158;
-    cursor: pointer;
-  }
-  .actions button.next {
-    border-style: solid;
-    border-color: var(--red);
-    color: var(--ink);
-  }
-  .actions button.next::before {
-    content: "";
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    margin-right: 6px;
-    border-radius: 50%;
-    background: var(--red);
-    transform: translateY(-1px);
-  }
-  .actions button.reset { margin-left: 8px; }
-  footer, .formal {
-    margin: 18px 12px 0;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: #a89888;
-    line-height: 1.5;
-  }
-  footer a, .formal summary { color: #8d6f68; }
-  .formal summary { cursor: pointer; }
-  .formal pre {
-    margin: 10px 0 0;
-    padding: 12px;
-    max-height: 320px;
-    overflow: auto;
-    background: var(--chip);
-    border: 1px dashed var(--line);
-    color: #5c564e;
-    font-size: 11px;
-    line-height: 1.45;
-    white-space: pre;
-  }
-  .shake { animation: shake 0.36s ease; }
-  @keyframes shake {
-    20% { transform: translateX(-4px); }
-    40% { transform: translateX(4px); }
-    60% { transform: translateX(-2px); }
-    80% { transform: translateX(2px); }
-  }
-  #vig-vine.snipping .cluster { transform: translate(48px, 30px); transition: transform 0.42s ease-in; }
-  #vig-crush.pressing .plate { transform: translateY(12px); transition: transform 0.22s ease-in; }
-  #vig-crush.pressing .splash { animation: splash 0.5s ease-out; }
-  #vig-crush.wine-splash .drop { fill: #7d3144; }
-  #vig-vat.live .bubble { animation: rise 1.35s linear infinite; }
-  #vig-vat.live .bubble:nth-child(2) { animation-delay: 0.25s; }
-  #vig-vat.live .bubble:nth-child(3) { animation-delay: 0.55s; }
-  #vig-vat.live .bubble:nth-child(4) { animation-delay: 0.85s; }
-  @keyframes splash {
-    0% { opacity: 0; transform: translateY(4px); }
-    30% { opacity: 1; }
-    100% { opacity: 0; transform: translateY(-14px); }
-  }
-  @keyframes rise {
-    0% { opacity: 0; transform: translateY(8px); }
-    15% { opacity: 0.85; }
-    100% { opacity: 0; transform: translateY(-34px); }
-  }
-  #vig-oak .juice, #vig-steel .sight-wine, #vig-glass .pour, #vig-crush .must, #vig-crush .pan, #vig-bottle .wine {
-    opacity: 0;
-  }
-  #vig-crush.show-must .must { opacity: 1; }
-  #vig-crush.show-pan .pan { opacity: 1; }
-  #vig-vat.filled .surface { opacity: 1; }
-  #vig-oak.chosen .juice { opacity: 1; }
-  #vig-steel.chosen .sight-wine { opacity: 1; }
-  #vig-glass.poured .pour { opacity: 1; }
-  #vig-bottle.lined .wine { opacity: 1; }
-  #vig-oak.chosen .art, #vig-steel.chosen .art { filter: drop-shadow(0 0 0 transparent); }
-  @media (max-width: 800px) {
-    h1 { font-size: 40px; }
-    .top { flex-direction: column; }
-    .rules { width: 100%; }
-    .row { grid-template-columns: 1fr; min-height: 0; margin: 8px 0; }
-    .side.blank { display: none; }
-    .side.left, .side.right { justify-content: center; }
-    .callout { width: 120px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    * { animation: none !important; transition: none !important; }
-  }
-</style>
-</head>
-<body>
-<div class="sheet" id="sheet">
-  <span class="plus" style="left:8%;top:210px">+</span>
-  <span class="plus" style="left:46%;top:430px">+</span>
-  <span class="plus" style="right:7%;top:250px">+</span>
-  <span class="plus" style="left:18%;top:640px">+</span>
-  <span class="plus" style="right:14%;top:720px">+</span>
-  <span class="plus" style="left:40%;top:980px">+</span>
-  <span class="plus" style="right:22%;top:1080px">+</span>
-  <span class="plus" style="left:8%;top:1180px">+</span>
-
-  <svg id="wires" class="wires" aria-hidden="true"></svg>
-
-  <div class="top">
-    <header>
-      <p class="kicker">field notes · one bottle</p>
-      <h1>One bottle</h1>
-      <p class="sub">from the vine to the glass</p>
-      <p class="now" id="now">on the vine</p>
-    </header>
-    <aside class="rules">
-      <h2>the rules</h2>
-      <p>they hold in every state TLC reaches</p>
-      <ul>
-        <li data-rule="ferment">you can't bottle before ferment finishes</li>
-        <li data-rule="empty">you can't serve an empty bottle</li>
-        <li data-rule="crush">you can't crush after the bottle</li>
-      </ul>
-    </aside>
-  </div>
-  <p class="notice" id="notice" role="status"></p>
-
-  <div class="flow" id="flow">
-    <div class="row">
-      <div class="side left">
-        <div class="vig" id="vig-vine" data-act="YouSnip" role="button" tabindex="0" aria-label="Snip the bunches">
-          <div class="callout" id="c-vine">
-            <span class="brc tl"></span><span class="brc tr"></span><span class="brc bl"></span><span class="brc br"></span>
-            <b>harvest</b><i>snip the bunches</i>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#eeecde" />
+    <meta
+      name="description"
+      content="One lot of red wine, from vine to glass. A living statechart drawn in pencil and pastel, with rules checked by TLA+."
+    />
+    <title>One lot · from vine to glass</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./app.mjs"></script>
+  </head>
+  <body>
+    <main id="sheet">
+      <header class="intro">
+        <p class="eyebrow">SIP STUDIES &nbsp; / &nbsp; FIELD NOTES No. 01</p>
+        <h1>One lot.<br />Many little steps.</h1>
+        <p class="subtitle">A red wine’s journey, from vine to glass.</p>
+        <div class="intro-bottom">
+          <p>Touch the drawings.<br />Follow the golden thread.</p>
+          <span class="hand-arrow" aria-hidden="true">↓</span>
+          <p>One lot. Two bottles.<br />Every step has a rule.</p>
+        </div>
+        <div class="legend" aria-label="Chart legend">
+          <span><i class="gold-swatch"></i> the path you take</span
+          ><span><i class="red-swatch"></i> a step refused</span
+          ><span><i class="ink-swatch"></i> another possibility</span>
+        </div>
+      </header>
+      <div id="flow" aria-label="Interactive wine journey">
+        <section
+          class="chapter vineyard"
+          id="vineyard"
+          data-phase="vine basket"
+        >
+          <div class="spine" aria-hidden="true"><div class="thread"></div></div>
+          <header class="chapter-heading">
+            <span class="chapter-number">01</span>
+            <div>
+              <p class="eyebrow">IN THE VINEYARD</p>
+              <h2>It starts with a bunch.</h2>
+            </div>
+          </header>
+          <div class="scene scene-vine">
+            <button
+              class="art-button"
+              data-act="YouSnip"
+              aria-label="Snip the bunches"
+            >
+              <img
+                class="illustration"
+                src="./assets/vine.png"
+                alt="Pencil and pastel grapevine with purple bunches and a harvest basket"
+                width="720"
+                height="600"
+              /><span class="art-hint">snip the bunches <b>↗</b></span>
+            </button>
+            <aside class="field-note">
+              Leave the stems behind.<br />Keep the good things.
+            </aside>
           </div>
-          <svg class="art" width="210" height="158" viewBox="0 0 210 158" aria-hidden="true">
-            <ellipse cx="118" cy="142" rx="62" ry="10" fill="#c5d2d8" opacity=".55"/>
-            <polygon points="118,108 176,136 118,152 60,136" fill="#e7eeea" stroke="#b7c7c2" stroke-width="1.2"/>
-            <polygon points="118,116 168,136 118,148 68,136" fill="#d5e2dc"/>
-            <g class="basket">
-              <path d="M150 118 l16 10 -22 8 -16 -8 z" fill="#e7d3a4" stroke="#3c3832" stroke-width="1.1"/>
-              <path d="M152 122 h14 M151 126 h16 M166 118 v18" stroke="#c4a56c" stroke-width="1" fill="none"/>
-              <g class="caught" opacity="0">
-                <circle cx="156" cy="122" r="3.2" fill="#8d5a82"/>
-                <circle cx="162" cy="124" r="2.8" fill="#a56b98"/>
-                <circle cx="158" cy="127" r="2.6" fill="#7a4a72"/>
-              </g>
-            </g>
-            <g class="tree">
-              <path d="M104 132 q2 -28 0 -48" stroke="#8d6a45" stroke-width="4" fill="none" stroke-linecap="round"/>
-              <circle cx="92" cy="78" r="16" fill="#8eae80"/>
-              <circle cx="112" cy="74" r="18" fill="#6d9468"/>
-              <circle cx="104" cy="64" r="14" fill="#b7d0a4"/>
-              <circle cx="86" cy="68" r="10" fill="#9cba8c"/>
-              <g class="cluster">
-                <circle cx="118" cy="86" r="3.4" fill="#8d5a82"/>
-                <circle cx="124" cy="90" r="3" fill="#a56b98"/>
-                <circle cx="116" cy="92" r="2.7" fill="#7a4a72"/>
-                <circle cx="122" cy="84" r="2.4" fill="#9a648c"/>
-              </g>
-            </g>
-            <g class="person" transform="translate(78,108)">
-              <path d="M-6 6 h12 l2 16 h-16 z" fill="#7f9b88"/>
-              <circle cx="0" cy="0" r="6.5" fill="#f0c8a4"/>
-              <ellipse cx="0" cy="-6" rx="7" ry="3.2" fill="#e4c27a"/>
-              <circle cx="-2" cy="0.5" r=".7" fill="#3c3832"/>
-              <circle cx="2.2" cy="0.5" r=".7" fill="#3c3832"/>
-            </g>
-          </svg>
-        </div>
-      </div>
-      <div class="mid">
-        <button class="node" id="n-vine" data-act="YouSnip" data-dot="leaf" type="button">
-          <i class="dot"></i><span class="nt">on the vine</span><span class="ns"></span>
-        </button>
-        <div class="wlab" id="w-snip">you snip the bunches</div>
-      </div>
-      <div class="side right blank"></div>
-    </div>
-
-    <div class="row">
-      <div class="side left blank"></div>
-      <div class="mid">
-        <button class="node" id="n-basket" data-act="YouCrush" data-dot="sand" type="button">
-          <i class="dot"></i><span class="nt">in the basket</span><span class="ns"></span>
-        </button>
-        <div class="wlab" id="w-crush">you crush and destem</div>
-      </div>
-      <div class="side right blank"></div>
-    </div>
-
-    <div class="row">
-      <div class="side left">
-        <div class="vig" id="vig-crush" data-act="auto" data-auto="crush" role="button" tabindex="0" aria-label="Crush or press">
-          <div class="callout" id="c-crush">
-            <span class="brc tl"></span><span class="brc tr"></span><span class="brc bl"></span><span class="brc br"></span>
-            <b>crush / press</b><i>then the skins</i>
+          <div class="stage-pair">
+            <span class="ticket" id="n-vine" data-state="vine">on the vine</span
+            ><span class="small-arrow" aria-hidden="true">↓</span
+            ><span class="ticket" id="n-basket" data-state="basket"
+              >in the basket</span
+            >
           </div>
-          <svg class="art" width="200" height="160" viewBox="0 0 200 160" aria-hidden="true">
-            <ellipse cx="100" cy="146" rx="58" ry="9" fill="#c5d2d8" opacity=".5"/>
-            <polygon points="100,112 158,138 100,154 42,138" fill="#e7eeea" stroke="#b7c7c2" stroke-width="1.2"/>
-            <g class="base">
-              <polygon points="70,96 130,96 142,108 58,108" fill="#d7a090" stroke="#3c3832" stroke-width="1.1"/>
-              <polygon points="58,108 142,108 136,124 64,124" fill="#c9846a" stroke="#3c3832" stroke-width="1.1"/>
-              <polygon points="130,96 142,108 136,124 124,112" fill="#b87460" stroke="#3c3832" stroke-width="1"/>
-            </g>
-            <g class="cage">
-              <path d="M78 96 v-28 a22 8 0 0 1 44 0 v28" fill="#f0e2cc" stroke="#3c3832" stroke-width="1.1"/>
-              <path d="M86 72 v24 M100 68 v28 M114 72 v24" stroke="#e0cbae" stroke-width="1"/>
-              <ellipse class="must" cx="100" cy="88" rx="18" ry="6" fill="#d2b07a"/>
-            </g>
-            <ellipse class="pan" cx="100" cy="116" rx="34" ry="6" fill="#7d3144"/>
-            <g class="plate">
-              <rect x="96" y="28" width="8" height="36" rx="1" fill="#c5c0b8" stroke="#3c3832" stroke-width="1"/>
-              <rect x="82" y="60" width="36" height="7" rx="1" fill="#b7b2aa" stroke="#3c3832" stroke-width="1"/>
-              <circle cx="100" cy="26" r="5" fill="#d9d4cc" stroke="#3c3832" stroke-width="1"/>
-            </g>
-            <g class="splash">
-              <circle class="drop" cx="78" cy="78" r="2.4" fill="#d2b48a"/>
-              <circle class="drop" cx="124" cy="74" r="2" fill="#d2b48a"/>
-              <circle class="drop" cx="108" cy="66" r="1.6" fill="#e6d2b0"/>
-            </g>
-          </svg>
-        </div>
-      </div>
-      <div class="mid">
-        <button class="node" id="n-must" data-act="YouSealTheVat" data-dot="sand" type="button">
-          <i class="dot"></i><span class="nt">crushed and destemmed</span><span class="ns"></span>
-        </button>
-        <div class="wlab" id="w-seal">you seal the vat</div>
-      </div>
-      <div class="side right blank"></div>
-    </div>
-
-    <div class="row">
-      <div class="side left">
-        <div class="vig" id="vig-vat" data-act="auto" data-auto="vat" role="button" tabindex="0" aria-label="Fermentation vat">
-          <div class="callout" id="c-vat">
-            <span class="brc tl"></span><span class="brc tr"></span><span class="brc bl"></span><span class="brc br"></span>
-            <b>ferment</b><i id="vat-sub">the vat is empty</i>
+          <div class="chapter-actions">
+            <button data-act="YouSnip">snip the bunches <span>↘</span></button>
           </div>
-          <svg class="art" width="180" height="176" viewBox="0 0 180 176" aria-hidden="true">
-            <ellipse cx="96" cy="162" rx="48" ry="8" fill="#c5d2d8" opacity=".5"/>
-            <polygon points="96,128 150,150 96,166 42,150" fill="#e7eeea" stroke="#b7c7c2" stroke-width="1.2"/>
-            <g stroke="#3c3832" stroke-width="1.1">
-              <path d="M70 150 l-8 8" fill="none"/>
-              <path d="M122 150 l8 8" fill="none"/>
-              <path d="M96 158 v10" fill="none"/>
-            </g>
-            <path d="M58 78 v48 a38 14 0 0 0 76 0 v-48" fill="#e7d3b4" stroke="#3c3832" stroke-width="1.2"/>
-            <ellipse cx="96" cy="78" rx="38" ry="13" fill="#f3e6d0" stroke="#3c3832" stroke-width="1.2"/>
-            <ellipse class="surface" cx="96" cy="86" rx="30" ry="9" fill="#7d3144" opacity="0"/>
-            <ellipse class="cap" cx="96" cy="82" rx="28" ry="7" fill="#5c2434" opacity="0"/>
-            <g class="bubbles">
-              <circle class="bubble" cx="86" cy="100" r="2.2" fill="#f4e4ea"/>
-              <circle class="bubble" cx="102" cy="108" r="1.8" fill="#f7eef2"/>
-              <circle class="bubble" cx="94" cy="96" r="1.5" fill="#fff"/>
-              <circle class="bubble" cx="110" cy="102" r="2" fill="#f4e4ea"/>
-            </g>
-            <g class="lock">
-              <rect x="90" y="52" width="12" height="16" rx="2" fill="#d5ebe6" stroke="#3c3832" stroke-width="1"/>
-              <circle cx="96" cy="48" r="4" fill="#c5ddd8" stroke="#3c3832" stroke-width="1"/>
-            </g>
-          </svg>
-        </div>
-      </div>
-      <div class="mid">
-        <button class="node" id="n-ferment" data-act="ADayPasses" data-dot="wine" type="button">
-          <i class="dot"></i><span class="nt">fermenting</span><span class="ns" id="ferment-sub"></span>
-        </button>
-        <div class="wlab" id="w-day">a day passes</div>
-      </div>
-      <div class="side right blank"></div>
-    </div>
-
-    <div class="row">
-      <div class="side left blank"></div>
-      <div class="mid">
-        <button class="node" id="n-finished" data-act="YouPress" data-dot="wine" type="button">
-          <i class="dot"></i><span class="nt">fermentation finished</span><span class="ns" id="finished-sub"></span>
-        </button>
-        <div class="wlab" id="w-press">you press the skins</div>
-      </div>
-      <div class="side right blank"></div>
-    </div>
-
-    <div class="row">
-      <div class="side left blank"></div>
-      <div class="mid">
-        <button class="node" id="n-pressed" data-act="choose" data-dot="gold" type="button">
-          <i class="dot"></i><span class="nt">pressed, choose a vessel</span><span class="ns"></span>
-        </button>
-      </div>
-      <div class="side right blank"></div>
-    </div>
-
-    <div class="row spread">
-      <div class="side left">
-        <div class="vig" id="vig-oak" data-act="YouRackIntoOak" role="button" tabindex="0" aria-label="Oak barrel">
-          <div class="callout" id="c-oak">
-            <span class="brc tl"></span><span class="brc tr"></span><span class="brc bl"></span><span class="brc br"></span>
-            <b>oak barrel</b><i>if you like barrel</i>
+          <p class="margin-note">The first move is yours.</p>
+        </section>
+        <section
+          class="chapter winery"
+          id="winery"
+          data-phase="must ferment pressed"
+        >
+          <div class="spine" aria-hidden="true"><div class="thread"></div></div>
+          <header class="chapter-heading">
+            <span class="chapter-number">02</span>
+            <div>
+              <p class="eyebrow">IN THE WINERY</p>
+              <h2>A little patience.</h2>
+            </div>
+          </header>
+          <div class="equipment-row">
+            <div class="equipment">
+              <button
+                class="art-button"
+                data-act="YouCrush"
+                aria-label="Crush and destem"
+              >
+                <img
+                  class="illustration"
+                  src="./assets/crusher.png"
+                  alt="Hand drawn crusher, with grapes ready to become must"
+                  width="720"
+                  height="600"
+                  loading="lazy"
+                /><span class="art-hint"
+                  >crush &amp; destem <b>↗</b></span
+                ></button
+              ><span class="ticket" id="n-must" data-state="must"
+                >crushed &amp; destemmed</span
+              >
+            </div>
+            <div class="equipment vat-scene">
+              <button
+                class="art-button"
+                data-act="YouSealTheVat"
+                aria-label="Seal the vat"
+              >
+                <img
+                  class="illustration"
+                  src="./assets/vat.png"
+                  alt="A fermentation vat drawn in pencil and pastel"
+                  width="720"
+                  height="600"
+                  loading="lazy"
+                /><span class="art-hint">seal the vat <b>↗</b></span
+                ><span class="bubbles" aria-hidden="true"
+                  ><i></i><i></i><i></i
+                ></span></button
+              ><span class="ticket" id="n-ferment" data-state="ferment"
+                >fermenting</span
+              >
+              <p id="ferment-detail" class="equipment-note">
+                Two model days. Let the yeast work.
+              </p>
+              <div class="day-marks" aria-label="Fermentation progress">
+                <span>day 0</span><i data-day="1"></i><i data-day="2"></i
+                ><span>finished</span>
+              </div>
+            </div>
           </div>
-          <svg class="art" width="200" height="150" viewBox="0 0 200 150" aria-hidden="true">
-            <ellipse cx="108" cy="132" rx="62" ry="10" fill="#c5d2d8" opacity=".5"/>
-            <polygon points="108,100 170,126 108,146 46,126" fill="#e7eeea" stroke="#b7c7c2" stroke-width="1.2"/>
-            <g class="barrel">
-              <ellipse cx="64" cy="96" rx="16" ry="28" fill="#d7b07a" stroke="#3c3832" stroke-width="1.15"/>
-              <path d="M64 68 h78 a16 28 0 0 1 0 56 h-78" fill="#c4925c" stroke="#3c3832" stroke-width="1.15"/>
-              <ellipse cx="142" cy="96" rx="16" ry="28" fill="#e2c392" stroke="#3c3832" stroke-width="1.15"/>
-              <path d="M78 70 v52 M108 66 v60 M128 70 v52" stroke="#b8895a" stroke-width="3" fill="none"/>
-              <path d="M78 70 v52 M108 66 v60 M128 70 v52" stroke="#8a6844" stroke-width="1.2" fill="none"/>
-              <ellipse class="juice" cx="142" cy="96" rx="8" ry="16" fill="#7d3144"/>
-              <rect x="100" y="58" width="10" height="8" rx="1" fill="#8a6844" stroke="#3c3832" stroke-width="1"/>
-            </g>
-          </svg>
-        </div>
-      </div>
-      <div class="mid">
-        <div class="fork-conds">
-          <span id="w-oak">[if you like oak]</span>
-          <span id="w-steel">[if you like steel]</span>
-        </div>
-        <div class="pair">
-          <button class="node" id="n-oak" data-act="YouRackIntoOak" data-dot="oak" type="button">
-            <i class="dot"></i><span class="nt">aging in oak</span><span class="ns"></span>
+          <div class="chapter-actions">
+            <button data-act="YouCrush">crush and destem</button
+            ><button data-act="YouSealTheVat">seal the vat</button
+            ><button data-act="ADayPasses">a day passes <span>☀</span></button>
+          </div>
+          <div class="press-row">
+            <button
+              class="art-button"
+              data-act="YouPress"
+              aria-label="Press the skins"
+            >
+              <img
+                class="illustration"
+                src="./assets/press.png"
+                alt="Timber wine press with threaded screw and collecting tray"
+                width="720"
+                height="600"
+                loading="lazy"
+              /><span class="art-hint">press the skins <b>↗</b></span>
+            </button>
+            <div class="press-copy">
+              <p class="field-note">
+                Red wine ferments<br />with its skins.<br /><span
+                  class="drawn-underline"
+                  >Then we press.</span
+                >
+              </p>
+              <span class="ticket" id="n-pressed" data-state="pressed"
+                >pressed, choose a vessel</span
+              ><button class="ink-button" data-act="YouPress">
+                press the skins ↘
+              </button>
+            </div>
+          </div>
+          <button class="rule-note" data-act="YouBottle" data-rule="ferment">
+            <span class="rule-mark">!</span
+            ><span
+              >You can’t bottle<br />before ferment finishes.<small
+                >try: bottle the lot ↗</small
+              ></span
+            >
           </button>
-          <button class="node" id="n-steel" data-act="YouRackIntoSteel" data-dot="steel" type="button">
-            <i class="dot"></i><span class="nt">aging in steel</span><span class="ns"></span>
-          </button>
-        </div>
-        <div class="wlab" id="w-bottle">you bottle the lot</div>
-      </div>
-      <div class="side right">
-        <div class="vig" id="vig-steel" data-act="YouRackIntoSteel" role="button" tabindex="0" aria-label="Steel tank">
-          <svg class="art" width="160" height="176" viewBox="0 0 160 176" aria-hidden="true">
-            <ellipse cx="80" cy="162" rx="46" ry="8" fill="#c5d2d8" opacity=".5"/>
-            <polygon points="80,128 128,148 80,164 32,148" fill="#e7eeea" stroke="#b7c7c2" stroke-width="1.2"/>
-            <path d="M48 70 v46 l32 22 32 -22 v-46" fill="#c5d3d8" stroke="#3c3832" stroke-width="1.15"/>
-            <path d="M52 78 v50 a28 12 0 0 0 56 0 v-50" fill="#d5e0e4" stroke="#3c3832" stroke-width="1.2"/>
-            <ellipse cx="80" cy="78" rx="28" ry="10" fill="#eef3f5" stroke="#3c3832" stroke-width="1.2"/>
-            <path d="M92 70 v18" stroke="#f7fbfc" stroke-width="3" opacity=".7"/>
-            <rect x="70" y="96" width="8" height="22" rx="1" fill="#e7eef0" stroke="#3c3832" stroke-width="1"/>
-            <rect class="sight-wine" x="71" y="104" width="6" height="12" fill="#7d3144"/>
-            <rect x="74" y="58" width="12" height="12" rx="2" fill="#c5d3d8" stroke="#3c3832" stroke-width="1"/>
-            <circle cx="108" cy="118" r="4" fill="#b7c4c8" stroke="#3c3832" stroke-width="1"/>
+        </section>
+        <section class="chapter cellar" id="cellar" data-phase="cellar">
+          <div class="spine" aria-hidden="true"><div class="thread"></div></div>
+          <header class="chapter-heading">
+            <span class="chapter-number">03</span>
+            <div>
+              <p class="eyebrow">IN THE CELLAR</p>
+              <h2>Two ways to wait.</h2>
+            </div>
+          </header>
+          <p class="chapter-caption">The same lot. One vessel. Your choice.</p>
+          <svg class="fork" viewBox="0 0 680 100" aria-hidden="true">
+            <path
+              class="fork-path"
+              d="M340 0 C340 63 165 23 165 100 M340 0 C340 63 515 23 515 100"
+            />
+            <path class="fork-gold oak" d="M340 0 C340 63 165 23 165 100" />
+            <path class="fork-gold steel" d="M340 0 C340 63 515 23 515 100" />
           </svg>
-          <div class="callout" id="c-steel">
-            <span class="brc tl"></span><span class="brc tr"></span><span class="brc bl"></span><span class="brc br"></span>
-            <b>steel tank</b><i>if you like tank</i>
+          <div class="vessels">
+            <div class="vessel" data-vessel="oak">
+              <button
+                class="art-button"
+                data-act="YouRackIntoOak"
+                aria-label="Rack into oak"
+              >
+                <img
+                  class="illustration"
+                  src="./assets/oak.png"
+                  alt="Golden oak barrel with inked staves and iron hoops"
+                  width="720"
+                  height="600"
+                  loading="lazy"
+                /><span class="art-hint">choose oak <b>↗</b></span></button
+              ><span class="ticket" id="n-oak" data-state="oak"
+                >aging in oak</span
+              >
+              <p class="equipment-note">Wood. Time. A softer edge.</p>
+              <button class="ink-button" data-act="YouRackIntoOak">
+                rack into oak ↘
+              </button>
+            </div>
+            <div class="vessel" data-vessel="steel">
+              <button
+                class="art-button"
+                data-act="YouRackIntoSteel"
+                aria-label="Rack into steel"
+              >
+                <img
+                  class="illustration"
+                  src="./assets/steel.png"
+                  alt="Cool blue steel tank with fine pencil hatching"
+                  width="720"
+                  height="600"
+                  loading="lazy"
+                /><span class="art-hint">choose steel <b>↗</b></span></button
+              ><span class="ticket" id="n-steel" data-state="steel"
+                >aging in steel</span
+              >
+              <p class="equipment-note">Cool. Quiet. Fruit comes first.</p>
+              <button class="ink-button" data-act="YouRackIntoSteel">
+                rack into steel ↘
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="side left blank"></div>
-      <div class="mid">
-        <button class="node" id="n-bottled" data-act="YouBottle" data-dot="gold" type="button">
-          <i class="dot"></i><span class="nt">bottled</span><span class="ns" id="bottle-sub"></span>
-        </button>
-        <div class="wlab" id="w-pour">you pour a glass</div>
-      </div>
-      <div class="side right">
-        <div class="vig" id="vig-bottle" data-act="YouBottle" role="button" tabindex="0" aria-label="Bottling line">
-          <svg class="art" width="180" height="150" viewBox="0 0 180 150" aria-hidden="true">
-            <ellipse cx="90" cy="132" rx="64" ry="10" fill="#c5d2d8" opacity=".5"/>
-            <polygon points="90,104 154,130 90,148 26,130" fill="#e7eeea" stroke="#b7c7c2" stroke-width="1.2"/>
-            <polygon points="40,108 140,108 150,120 30,120" fill="#d9cbb8" stroke="#3c3832" stroke-width="1.1"/>
-            <g class="bottle" transform="translate(58,28)">
-              <path d="M14 8 h8 v16 c10 6 14 16 14 28 v22 h-36 v-22 c0 -12 4 -22 14 -28 v-16 z" fill="#e7f3ef" stroke="#3c3832" stroke-width="1.15"/>
-              <rect class="wine" x="6" y="62" width="24" height="18" fill="#7d3144"/>
-              <rect x="14" y="4" width="8" height="8" fill="#c6a35e" stroke="#3c3832" stroke-width="1"/>
-            </g>
-            <g class="bottle b2" transform="translate(96,28)">
-              <path d="M14 8 h8 v16 c10 6 14 16 14 28 v22 h-36 v-22 c0 -12 4 -22 14 -28 v-16 z" fill="#e7f3ef" stroke="#3c3832" stroke-width="1.15"/>
-              <rect class="wine" x="6" y="62" width="24" height="18" fill="#7d3144"/>
-              <rect x="14" y="4" width="8" height="8" fill="#c6a35e" stroke="#3c3832" stroke-width="1"/>
-            </g>
-          </svg>
-          <div class="callout" id="c-bottle">
-            <span class="brc tl"></span><span class="brc tr"></span><span class="brc bl"></span><span class="brc br"></span>
-            <b>bottle</b><i id="bottle-call">the line waits</i>
+          <p id="vessel-detail" class="margin-note">
+            Pick a path after pressing. Once racked, this lot stays put.
+          </p>
+        </section>
+        <section class="chapter table" id="table" data-phase="bottled glass">
+          <div class="spine" aria-hidden="true"><div class="thread"></div></div>
+          <header class="chapter-heading">
+            <span class="chapter-number">04</span>
+            <div>
+              <p class="eyebrow">AT THE TABLE</p>
+              <h2>A story worth pouring.</h2>
+            </div>
+          </header>
+          <div class="equipment-row finishing">
+            <div class="equipment">
+              <button
+                class="art-button"
+                data-act="YouBottle"
+                aria-label="Bottle the lot"
+              >
+                <img
+                  class="illustration"
+                  src="./assets/bottles.png"
+                  alt="Two green wine bottles with cream paper labels"
+                  width="720"
+                  height="600"
+                  loading="lazy"
+                /><span class="art-hint">bottle the lot <b>↗</b></span></button
+              ><span class="ticket" id="n-bottled" data-state="bottled"
+                >bottled</span
+              >
+              <p id="bottle-detail" class="equipment-note">
+                Two bottles, waiting for the lot.
+              </p>
+              <button class="ink-button" data-act="YouBottle">
+                bottle the lot ↘
+              </button>
+            </div>
+            <div class="equipment">
+              <button
+                class="art-button"
+                data-act="YouPour"
+                aria-label="Pour a glass"
+              >
+                <img
+                  class="illustration"
+                  src="./assets/glass.png"
+                  alt="Fine stemmed tasting glass with ruby red wine"
+                  width="720"
+                  height="600"
+                  loading="lazy"
+                /><span class="art-hint">pour a glass <b>↗</b></span></button
+              ><span class="ticket" id="n-glass" data-state="glass"
+                >in the glass</span
+              >
+              <p id="glass-detail" class="equipment-note">
+                A good ending takes every step.
+              </p>
+              <button class="ink-button" data-act="YouPour">
+                pour a glass ↘
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="side left">
-        <div class="vig" id="vig-glass" data-act="YouPour" role="button" tabindex="0" aria-label="Tasting glass">
-          <div class="callout" id="c-glass">
-            <span class="brc tl"></span><span class="brc tr"></span><span class="brc bl"></span><span class="brc br"></span>
-            <b>taste</b><i id="glass-call">a clean glass</i>
+          <div class="rule-strip">
+            <button class="rule-note" data-act="YouPour" data-rule="empty">
+              <span class="rule-mark">!</span
+              ><span
+                >You can’t serve<br />an empty bottle.<small
+                  >try: pour a glass ↗</small
+                ></span
+              ></button
+            ><button class="rule-note" data-act="YouCrush" data-rule="crush">
+              <span class="rule-mark">!</span
+              ><span
+                >You can’t crush<br />after bottling.<small
+                  >try: crush &amp; destem ↗</small
+                ></span
+              >
+            </button>
           </div>
-          <svg class="art" width="180" height="160" viewBox="0 0 180 160" aria-hidden="true">
-            <ellipse cx="96" cy="146" rx="50" ry="8" fill="#c5d2d8" opacity=".45"/>
-            <polygon points="70,118 130,118 122,140 78,140" fill="#f4efe8" stroke="#3c3832" stroke-width="1.1"/>
-            <path d="M78 36 h44 l-8 48 a14 10 0 0 1 -28 0 z" fill="#fbf8f4" stroke="#3c3832" stroke-width="1.2"/>
-            <path class="pour" d="M84 62 h32 l-4 18 a10 7 0 0 1 -24 0 z" fill="#7d3144"/>
-            <path d="M96 84 v22" stroke="#3c3832" stroke-width="1.4"/>
-            <path d="M84 108 h24" stroke="#3c3832" stroke-width="1.4" stroke-linecap="round"/>
-            <g class="person" transform="translate(132,96)">
-              <path d="M-6 8 h12 l2 18 h-16 z" fill="#d7b07a"/>
-              <circle cx="0" cy="0" r="7" fill="#f0c8a4"/>
-              <ellipse cx="1" cy="-7" rx="8" ry="3" fill="#e4c27a"/>
-              <circle cx="-2" cy="0.6" r=".7" fill="#3c3832"/>
-              <circle cx="2.2" cy="0.6" r=".7" fill="#3c3832"/>
-            </g>
-          </svg>
+          <p class="end-note">Every good glass has a beginning.</p>
+          <button id="reset" class="reset">↺ &nbsp; start a new lot</button>
+        </section>
+      </div>
+      <footer>
+        <p class="eyebrow">DRAWN IN CODE. GROUNDED IN RULES.</p>
+        <p>
+          One red-wine lot, modelled in TLA+ and checked with TLC.<br />The
+          illustrations are pencil, pastel and pen, simulated in JavaScript.
+        </p>
+        <p class="credits">
+          A Sip Studies experiment by
+          <a href="https://github.com/Sip-Coder/Poteto-Stack">Sip-Coder</a
+          >.<br />With
+          <a href="https://github.com/cursor/plugins/tree/main/pstack"
+            >Lauren Tan’s /statechart</a
+          >, April Zhu’s
+          <a href="https://april-zhu.com/colorfigures">field notes</a>, and
+          <a href="https://github.com/kevintngo/statechart-art"
+            >Kevin Ngo’s dry-media drawing kit</a
+          >
+          (MIT). Lettering: Kevin Sans, after Hershey.
+        </p>
+        <details class="formal">
+          <summary>Read the model &amp; its rules <span>+</span></summary>
+          <p>
+            15 reachable states. The original TLC report and model are
+            preserved.
+          </p>
+          <div class="formal-links">
+            <a href="../spec/Wine.tla">Wine.tla</a
+            ><a href="../spec/Wine.cfg">Wine.cfg</a
+            ><a href="../spec/report.md">TLC report</a
+            ><a href="../art/vendor/statechart-art/LICENSE"
+              >Drawing kit license</a
+            >
+          </div>
+          <pre id="chart-src">Loading the formal chart…</pre>
+        </details>
+        <div class="tours">
+          <span>Or watch a lot travel:</span
+          ><button id="play-oak">oak path →</button
+          ><button id="play-steel">steel path →</button>
         </div>
+      </footer>
+    </main>
+    <div class="live-bar">
+      <span class="live-dot" aria-hidden="true"></span>
+      <div>
+        <span class="status-label">THIS LOT</span>
+        <p id="now" role="status" aria-live="polite">on the vine</p>
       </div>
-      <div class="mid">
-        <button class="node" id="n-glass" data-act="YouPour" data-dot="rose" type="button">
-          <i class="dot"></i><span class="nt">in the glass</span><span class="ns" id="glass-sub"></span>
-        </button>
-      </div>
-      <div class="side right blank"></div>
+      <button id="next-action">snip the bunches <span>↓</span></button>
     </div>
-  </div>
-
-  <div class="actions" id="actions">
-    <button type="button" data-act="YouSnip">snip the bunches</button>
-    <button type="button" data-act="YouCrush">crush and destem</button>
-    <button type="button" data-act="YouSealTheVat">seal the vat</button>
-    <button type="button" data-act="ADayPasses">a day passes</button>
-    <button type="button" data-act="YouPress">press the skins</button>
-    <button type="button" data-act="YouRackIntoOak">rack into oak</button>
-    <button type="button" data-act="YouRackIntoSteel">rack into steel</button>
-    <button type="button" data-act="YouBottle">bottle the lot</button>
-    <button type="button" data-act="YouPour">pour a glass</button>
-    <button type="button" class="reset" id="reset">start again</button>
-  </div>
-
-  <footer>
-    Field notes after April Zhu’s Colorfigures and statechart demos.
-    The rules are a TLA+ model checked with TLC, in the manner of Lauren Tan’s pstack <span>/statechart</span>.
-  </footer>
-  <details class="formal">
-    <summary>formal chart (Mermaid, from the TLA+ model)</summary>
-    <pre id="chart-src">The chart is written by the statechart tool into spec/chart.mmd.</pre>
-  </details>
-</div>
-<script type="module">
-import {
-  BottleCount,
-  FermentDays,
-  HAPPY_OAK,
-  HAPPY_STEEL,
-  chartState,
-  guard,
-  initial,
-  step,
-} from "../src/wine-machine.mjs";
-
-const $ = (id) => document.getElementById(id);
-const notice = $("notice");
-let state = readQuery();
-let busy = false;
-let noticeTimer = 0;
-let ruleTimer = 0;
-
-function readQuery() {
-  const q = new URLSearchParams(location.search);
-  if (!q.has("place")) return initial();
-  const place = q.get("place");
-  return {
-    place,
-    vessel: q.get("vessel") || "none",
-    day: Number(q.get("day") ?? 0),
-    left: Number(q.get("left") ?? 0),
-    bottledOnce: q.get("bottled") === "1" || place === "bottled" || place === "glass",
-  };
-}
-
-function phaseOf(s) {
-  if (s.place === "vine") return "vine";
-  if (s.place === "basket") return "basket";
-  if (s.place === "must") return "must";
-  if (s.place === "ferment" && s.day < FermentDays) return "ferment";
-  if (s.place === "ferment") return "finished";
-  if (s.place === "pressed") return "pressed";
-  if (s.place === "cellar") return s.vessel === "oak" ? "oak" : "steel";
-  if (s.place === "bottled") return "bottled";
-  return "glass";
-}
-
-const RANK = {
-  vine: 0, basket: 1, must: 2, ferment: 3, finished: 4, pressed: 5,
-  oak: 6, steel: 6, bottled: 7, glass: 8,
-};
-
-function paint() {
-  $("now").textContent = chartState(state);
-  const phase = phaseOf(state);
-  const rank = RANK[phase];
-
-  for (const id of ["vine", "basket", "must", "ferment", "finished", "pressed", "oak", "steel", "bottled", "glass"]) {
-    const el = $("n-" + id);
-    el.classList.remove("active", "done", "dim", "open");
-    if (id === "oak" || id === "steel") {
-      if (state.place === "pressed") el.classList.add("open");
-      else if (state.vessel === id && rank === 6) el.classList.add("active");
-      else if (state.vessel === id && rank > 6) el.classList.add("done");
-      else if (state.vessel !== "none" && state.vessel !== id) el.classList.add("dim");
-      continue;
-    }
-    const r = RANK[id];
-    if (r === rank) el.classList.add("active");
-    else if (r < rank) el.classList.add("done");
-  }
-
-  $("ferment-sub").textContent =
-    state.place === "ferment" && state.day < FermentDays
-      ? (state.day === 0 ? "just sealed" : "one day in")
-      : "";
-  $("finished-sub").textContent = state.place === "ferment" && state.day === FermentDays ? "ready to press" : "";
-  $("bottle-sub").textContent =
-    state.place === "bottled" ? (state.left > 1 ? `${state.left} left` : "last bottle") :
-    state.place === "glass" ? "empty" : "";
-  $("glass-sub").textContent =
-    state.place === "glass" || (state.place === "bottled" && state.left < BottleCount)
-      ? state.vessel : "";
-
-  const labels = {
-    "w-snip": "YouSnip",
-    "w-crush": "YouCrush",
-    "w-seal": "YouSealTheVat",
-    "w-day": "ADayPasses",
-    "w-press": "YouPress",
-    "w-oak": "YouRackIntoOak",
-    "w-steel": "YouRackIntoSteel",
-    "w-bottle": "YouBottle",
-    "w-pour": "YouPour",
-  };
-  for (const [id, action] of Object.entries(labels)) {
-    const el = $(id);
-    el.classList.remove("soon", "hot", "dim");
-    if (guard(state, action)) el.classList.add("soon");
-  }
-  if (state.vessel === "oak") {
-    $("w-oak").classList.add("hot");
-    $("w-steel").classList.add("dim");
-  } else if (state.vessel === "steel") {
-    $("w-steel").classList.add("hot");
-    $("w-oak").classList.add("dim");
-  }
-
-  for (const button of document.querySelectorAll(".actions button[data-act]")) {
-    button.classList.toggle("next", guard(state, button.dataset.act));
-  }
-
-  light("c-vine", state.place === "vine" || state.place === "basket");
-  light("c-crush", state.place === "must" || phase === "finished" || state.place === "pressed");
-  light("c-vat", state.place === "ferment");
-  light("c-oak", state.vessel === "oak");
-  light("c-steel", state.vessel === "steel");
-  light("c-bottle", state.place === "cellar" || state.place === "bottled");
-  light("c-glass", state.place === "glass" || (state.place === "bottled" && state.left < BottleCount));
-
-  const vine = $("vig-vine");
-  vine.classList.toggle("snipping", false);
-  vine.querySelector(".cluster").style.opacity = state.place === "vine" ? "1" : "0";
-  vine.querySelector(".caught").style.opacity = state.place === "basket" ? "1" : "0";
-
-  const crush = $("vig-crush");
-  crush.classList.toggle("show-must", state.place === "must");
-  crush.classList.toggle("show-pan", state.place === "pressed");
-
-  const vat = $("vig-vat");
-  const fermenting = state.place === "ferment";
-  vat.classList.toggle("filled", fermenting);
-  vat.classList.toggle("live", fermenting && state.day < FermentDays);
-  vat.querySelector(".cap").style.opacity = fermenting && state.day === FermentDays ? "1" : "0";
-  $("vat-sub").textContent = fermenting
-    ? (state.day === FermentDays ? "ready to press" : state.day === 0 ? "just sealed" : "one day in")
-    : (rank > RANK.ferment ? "emptied to the press" : "the vat is empty");
-
-  $("vig-oak").classList.toggle("chosen", state.vessel === "oak");
-  $("vig-steel").classList.toggle("chosen", state.vessel === "steel");
-
-  const lined = state.place === "bottled" || state.place === "glass";
-  $("vig-bottle").classList.toggle("lined", lined);
-  const wines = $("vig-bottle").querySelectorAll(".wine");
-  const full = state.place === "bottled" ? state.left : 0;
-  wines.forEach((rect, i) => {
-    const on = i < full;
-    rect.setAttribute("height", on ? "18" : "0");
-    rect.setAttribute("y", on ? "62" : "80");
-    rect.style.opacity = on ? "1" : "0";
-  });
-  $("bottle-call").textContent =
-    state.place === "bottled" ? (state.left > 1 ? `${state.left} bottles` : "last bottle") :
-    state.place === "glass" ? "both empty" :
-    state.place === "cellar" ? "ready to fill" : "the line waits";
-
-  const poured = state.place === "glass" || (state.place === "bottled" && state.left < BottleCount);
-  $("vig-glass").classList.toggle("poured", poured);
-  $("glass-call").textContent = poured ? `${state.vessel} in the glass` : "a clean glass";
-
-  layoutWires();
-}
-
-function light(id, on) {
-  $(id).classList.toggle("on", on);
-}
-
-function anchor(id, edge) {
-  const sheet = $("sheet").getBoundingClientRect();
-  const rect = $(id).getBoundingClientRect();
-  return {
-    x: rect.left - sheet.left + rect.width / 2,
-    y: edge === "top" ? rect.top - sheet.top : rect.bottom - sheet.top,
-  };
-}
-
-function segment(a, b) {
-  if (Math.abs(a.x - b.x) < 1.5) return `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} V ${b.y.toFixed(1)}`;
-  const y = (a.y + b.y) / 2;
-  return `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} V ${y.toFixed(1)} H ${b.x.toFixed(1)} V ${b.y.toFixed(1)}`;
-}
-
-function layoutWires() {
-  const pairs = [
-    ["n-vine", "n-basket", "wire-1"],
-    ["n-basket", "n-must", "wire-2"],
-    ["n-must", "n-ferment", "wire-3"],
-    ["n-ferment", "n-finished", "wire-4"],
-    ["n-finished", "n-pressed", "wire-5"],
-  ];
-  const paths = pairs.map(([a, b, id]) => {
-    const d = segment(anchor(a, "bottom"), anchor(b, "top"));
-    return `<path id="${id}" class="wire" d="${d}"/>`;
-  });
-  const pressed = anchor("n-pressed", "bottom");
-  const oak = anchor("n-oak", "top");
-  const steel = anchor("n-steel", "top");
-  const yoke = Math.min(oak.y, steel.y) - 8;
-  paths.push(`<path id="wire-oak" class="wire" d="M ${pressed.x.toFixed(1)} ${pressed.y.toFixed(1)} V ${yoke.toFixed(1)} H ${oak.x.toFixed(1)} V ${oak.y.toFixed(1)}"/>`);
-  paths.push(`<path id="wire-steel" class="wire" d="M ${pressed.x.toFixed(1)} ${pressed.y.toFixed(1)} V ${yoke.toFixed(1)} H ${steel.x.toFixed(1)} V ${steel.y.toFixed(1)}"/>`);
-  const oakB = anchor("n-oak", "bottom");
-  const steelB = anchor("n-steel", "bottom");
-  const bottle = anchor("n-bottled", "top");
-  const meet = Math.max(oakB.y, steelB.y) + 28;
-  paths.push(`<path id="wire-oak-down" class="wire" d="M ${oakB.x.toFixed(1)} ${oakB.y.toFixed(1)} V ${meet.toFixed(1)} H ${bottle.x.toFixed(1)} V ${bottle.y.toFixed(1)}"/>`);
-  paths.push(`<path id="wire-steel-down" class="wire" d="M ${steelB.x.toFixed(1)} ${steelB.y.toFixed(1)} V ${meet.toFixed(1)} H ${bottle.x.toFixed(1)} V ${bottle.y.toFixed(1)}"/>`);
-  const pour = segment(anchor("n-bottled", "bottom"), anchor("n-glass", "top"));
-  paths.push(`<path id="wire-pour" class="wire" d="${pour}"/>`);
-  $("wires").innerHTML = paths.join("");
-  const hotOak = state.vessel === "oak";
-  const hotSteel = state.vessel === "steel";
-  markWire("wire-oak", hotOak, hotSteel);
-  markWire("wire-oak-down", hotOak, hotSteel);
-  markWire("wire-steel", hotSteel, hotOak);
-  markWire("wire-steel-down", hotSteel, hotOak);
-  const pastBottle = RANK[phaseOf(state)] >= RANK.bottled;
-  if (pastBottle) {
-    for (const id of ["wire-1", "wire-2", "wire-3", "wire-4", "wire-5"]) $(id).classList.add("hot");
-    if (state.place === "glass") $("wire-pour").classList.add("hot");
-  } else if (state.place !== "vine") {
-    const doneCount = RANK[phaseOf(state)];
-    ["wire-1", "wire-2", "wire-3", "wire-4", "wire-5"].forEach((id, i) => {
-      if (i < doneCount) $(id).classList.add("hot");
-    });
-  }
-}
-
-function markWire(id, hot, dim) {
-  const el = $(id);
-  if (hot) el.classList.add("hot");
-  else if (dim) el.classList.add("dim");
-}
-
-function flash(message, rule, el) {
-  notice.textContent = message;
-  notice.classList.add("show");
-  clearTimeout(noticeTimer);
-  noticeTimer = setTimeout(() => notice.classList.remove("show"), 2400);
-  if (el) {
-    el.classList.remove("shake");
-    void el.offsetWidth;
-    el.classList.add("shake");
-  }
-  document.querySelectorAll(".rules li").forEach((li) => {
-    li.classList.toggle("hit", Boolean(rule) && li.dataset.rule === rule);
-  });
-  clearTimeout(ruleTimer);
-  ruleTimer = setTimeout(() => {
-    document.querySelectorAll(".rules li.hit").forEach((li) => li.classList.remove("hit"));
-  }, 2400);
-}
-
-function resolve(el) {
-  if (el.dataset.act === "auto" && el.dataset.auto === "crush") {
-    return guard(state, "YouPress") || state.place === "ferment" ? "YouPress" : "YouCrush";
-  }
-  if (el.dataset.act === "auto" && el.dataset.auto === "vat") {
-    return state.place === "must" ? "YouSealTheVat" : "ADayPasses";
-  }
-  if (el.dataset.act === "choose") return "YouRackIntoOak";
-  if (el.dataset.act === "YouBottle" && state.place === "bottled") return "YouPour";
-  if (el.dataset.act === "YouPour" && state.place === "cellar") return "YouBottle";
-  return el.dataset.act;
-}
-
-function go(action, el) {
-  const result = step(state, action);
-  if (!result.ok) {
-    flash(result.reason, result.rule, el);
-    return;
-  }
-  if (busy) return;
-  busy = true;
-  const vig = el?.closest?.(".vig") || el;
-  if (vig && vig.classList) {
-    vig.classList.remove("shake");
-    if (action === "YouSnip") vig.classList.add("snipping");
-    if (action === "YouCrush" || action === "YouPress") {
-      vig.classList.add("pressing");
-      vig.classList.toggle("wine-splash", action === "YouPress");
-    }
-    if (action === "YouSealTheVat" || action === "ADayPasses") vig.classList.add("pop");
-  }
-  window.setTimeout(() => {
-    document.querySelectorAll(".snipping, .pressing, .pop").forEach((node) => {
-      node.classList.remove("snipping", "pressing", "pop", "wine-splash");
-    });
-    state = result.state;
-    busy = false;
-    paint();
-  }, 460);
-}
-
-document.body.addEventListener("click", (event) => {
-  const target = event.target.closest("[data-act]");
-  if (!target || target.id === "reset") return;
-  if (target.dataset.act === "choose") {
-    flash("Choose oak or steel.", null, target);
-    return;
-  }
-  const action = resolve(target);
-  go(action, target.closest(".vig") || target);
-});
-
-document.body.addEventListener("keydown", (event) => {
-  if (event.key !== "Enter" && event.key !== " ") return;
-  const target = event.target.closest(".vig[data-act]");
-  if (!target) return;
-  event.preventDefault();
-  target.click();
-});
-
-$("reset").addEventListener("click", () => {
-  if (busy) return;
-  state = initial();
-  notice.classList.remove("show");
-  paint();
-});
-
-window.addEventListener("resize", () => layoutWires());
-
-fetch("../spec/chart.mmd")
-  .then((res) => (res.ok ? res.text() : ""))
-  .then((text) => {
-    if (text.trim()) $("chart-src").textContent = text.trim();
-  })
-  .catch(() => {});
-
-paint();
-requestAnimationFrame(() => layoutWires());
-
-const params = new URLSearchParams(location.search);
-const trial = params.get("try");
-if (trial) {
-  const result = step(state, trial);
-  if (!result.ok) flash(result.reason, result.rule, document.querySelector(`.actions button[data-act="${trial}"]`));
-}
-
-const tour = params.get("play");
-if (tour === "oak" || tour === "steel") {
-  const acts = tour === "steel" ? HAPPY_STEEL : HAPPY_OAK;
-  let i = 0;
-  const tick = () => {
-    if (i >= acts.length) return;
-    go(acts[i], document.querySelector(`.actions button[data-act="${acts[i]}"]`));
-    i += 1;
-    window.setTimeout(tick, 780);
-  };
-  window.setTimeout(tick, 500);
-}
-</script>
-</body>
+    <p id="notice" role="alert" aria-atomic="true"></p>
+  </body>
 </html>
