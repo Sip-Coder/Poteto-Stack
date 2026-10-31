@@ -1253,6 +1253,21 @@ pre {
   .cellar .spine {
     left: 50%;
   }
+  .scene-vine {
+    display: block;
+    padding-top: 10px;
+  }
+  .scene-vine .art-button {
+    margin: auto;
+  }
+  .scene-vine > .field-note {
+    position: static;
+    width: max-content;
+    max-width: none;
+    margin: 12px 4px 0 auto;
+    text-align: right;
+    font-size: 12px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   html {
