@@ -1,0 +1,63 @@
+---
+title: "One bottle"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    lg0: Vineyard
+    lg1: Crush
+    lg2: Ferment
+    lg3: Press
+    lg4: Oak
+    lg5: Steel
+  }
+  class lg0 tan
+  class lg1 orange
+  class lg2 pink
+  class lg3 yellow
+  class lg4 teal
+  class lg5 blue
+  s0: on the vine
+  s1: in the basket
+  s2: crushed and destemmed
+  s3: ferment just started
+  s4: still fermenting
+  s5: fermentation finished
+  s6: pressed, choose a vessel
+  s7: aging in oak
+  s8: aging in steel
+  s9: oak, bottles left
+  s10: steel, bottles left
+  s11: oak, last bottle
+  s12: steel, last bottle
+  s13: oak, in the glass
+  s14: steel, in the glass
+  [*] --> s0
+  s0 --> s1: you snip the bunches
+  s1 --> s2: you crush and destem
+  s2 --> s3: you seal the vat
+  s3 --> s4: a day passes
+  s4 --> s5: a day passes [fermentation ends]
+  s5 --> s6: you press the skins
+  s6 --> s7: you rack into oak [if you like barrel]
+  s6 --> s8: you rack into steel [if you like tank]
+  s7 --> s9: you bottle the lot
+  s8 --> s10: you bottle the lot
+  s9 --> s11: you pour a glass
+  s10 --> s12: you pour a glass
+  s11 --> s13: you pour the last glass
+  s12 --> s14: you pour the last glass
+  class s0 tan
+  class s1 tan
+  class s2 orange
+  class s3 pink
+  class s4 pink
+  class s5 pink
+  class s6 yellow
+  class s7 teal
+  class s8 blue
+  class s9 teal
+  class s10 blue
+  class s11 teal
+  class s12 blue
+  class s13 teal
+  class s14 blue

@@ -1,0 +1,9 @@
+{
+  "name": "poteto-stack-wine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/wine-machine.test.mjs",
+    "check:tla": "scripts/check-tla.sh"
+  }
+}
