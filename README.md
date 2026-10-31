@@ -27,6 +27,8 @@ Each labelled action always performs exactly the action it names. Bottling again
 
 GitHub Pages publishes `/demo/` from the root of `main`. A normal push to `main` updates the phone preview after Pages finishes building.
 
+The stylesheet and browser module have a release query in `demo/index.html`. Bump it with frontend updates so a refreshed phone page requests the new assets instead of a cached earlier release.
+
 ## How this was drawn
 
 The model and drawing remain separate. `spec/Wine.tla`, its configuration, the shared reader-facing view, and the JavaScript machine supply the wine rules. The existing TLC report and Mermaid chart are preserved. The responsive journal has an authored layout; this redraw does not claim a new pele layout or TLC run.
